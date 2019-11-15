@@ -1,0 +1,23 @@
+LAM VIEC NHOM VOI GIT
+1. tao project, dung moi truong tao file gitirnoge(.env, laradocl, vendor)
+2. push len master
+3. dung origin master --> checkeout-->  branch develop -->push
+4. doing tasks
+b1: git checkout develop
+b2: git pull origin develop
+b3: git checkout -b feature/#1-2019.../ bugfix/#1-2019...
+// xu ly task
+b4: 	git status
+	git diff <duong dan den file>
+	git add <file vua check>
+	git commit -m "..."
+b5: git pull origin develop
+b6 : 
+Th1: khong bi confilt->git push origin feature/#1...
+th2: mo file conflict va fix conflict-> lan luot tung file --> git status --> tro ve b4
+
+b7: tao pull request 
+
+LAM VIEC VOI DATABASE
+
+

@@ -1,0 +1,184 @@
+1. Diem manh cua docker:
+- Doc lap:
+loi xay ra voi container nay khong anh huong toi container khac
+- Co dong
+ + tranh duoc conflict moi truong
+ + Trao doi giua cac may
+ + Nhat quan khi chay tren cac may khac nhau
+- chup anh he thong (snapshot)
+ + luu snapshot thanh container hoac image
+ + tag
+ + tao container y het tu snapshot
+- kiem soat viec su dung tai nguyen(CPU, RAM, storage)
+- Don gian hoa su phu thuoc giua cac ung dung(dependency)
+ Xac dinh dependency o Dockerfile
+- thuan tien cho viec chia se
+ + Docker Hub (public/private register)
+ + Dockerfile
+
+2. docker la gi? moi truong ao
+Docker là một tool được thiết kế nhằm giúp các Developer hoặc người vận hành dự án dễ dàng hơn trong việc tạo, deploy hoặc chạy ứng dụng của mình bằng cách sử dụng các containers. Docker giúp các bạn dev cấu hình mọi thứ các bạn cần như những gói thư viện hoặc những dependencies. Docker là 1 open source. 
+
+3. Moi truong phat trien web 
+ 3.1. Cài đặt Apache Server 
+
+         sudo apt install apache2 -->ok
+	// sudo service apache2 stop/start/restart
+ 
+ 3.2. Cài đặt MySQL Server 
+
+        sudo apt-get install mysql-server
+	sudo mysql_secure_installation 
+	sudo mysql -u root -p
+
+ 3.3. Cài đặt PHP 
+       sudo apt install php libapache2-mod-php php-mysql
+   các gói cài thêm: 
+
+        sudo apt-get install php7.2-bcmath
+
+	sudo apt-get install php7.2-bz2
+	sudo apt-get install php7.2-intl
+	sudo apt-get install php7.2-gd
+	sudo apt-get install php7.2-mbstring
+	sudo apt-get install php7.2-zip
+ 	- Search tên các gói PHP5 hỗ trợ : sudo apt-cache search php5
+
+ 3.4 Cài đặt PHPMyAdmin :
+
+   sudo apt-get install phpmyadmin
+   error: cd /etc/phpmyadmin -> sudo cat config-db.php
+
+3.5: Schedule Start Mysql and Apache to start on system restart or boot.
+	
+		sudo systemctl enable apache2.service
+		sudo systemctl enable mysql.service
+
+
+4. chia se du lieu giua cac container trong docker
+** contianer anh xa thu muc may host
+- docker run -it pathHost:pathContainer IDimage
+- ex: docker run -it --name U2 -v /home/nhatthanh2012/Desktop/shareData:/home/dulieu 7a4403bfe32c 
+
+** chia se du lieu giua cac container
+- docker run -it --name U3 --volumes-from U2(ten container) ubuntu
+
+** kiem tra o dia
+- docker volume ls
+- doker volume create NAMEDISK
+- docker volume inspect NAMEDISK : kiem tra thong tin o dia;	
+- docker volume rm D1: xoa o dia D1
+
+** gan o dia vao container
+- docker run -it --mount source=firstdisk,target=/home/firstdisk  ubuntu: gan o dia firstdisk vao thu muc home/firstdisk cua container
+- example: docker run -it --name Thanh2 --mount source=D2,target=/home/disk2 ubuntu:19.10
+
+** tao 1 o dia, anh xa den mot thu muc trong may host:
+-docker volume create --opt device=/home/mydata --opt type=none --opt o=bind mydisk
+Sau đó ổ đĩa này gán vào container với tham số -v (không dùng --mount)
+Ví dụ:
+	# Tạo ổ đĩa có tên mydisk (dữ liệu lưu tại /home/mydata)
+	  docker volume create --opt device=/home/mydata --opt type=none --opt o=bind  mydisk
+	# Gán ổ đĩa vào container tại (/home/sites)
+	  docker run -it -v mydisk:/home/sites ubuntu
+
+
+5. CAI DAT LARAVEL DOCKER
+  b1: git clone https://github.com/byhbt/laravel-docker.git -> $ cd laravel-project
+  b2: $ docker-compose build
+  b3: $ docker-compose up
+  b4: $ composer install
+  b5: copy file env.example va doi ten thanh .env -> chay lenh $ php artisan key:generate
+  b6: $ sudo chmod -R 777 storage/ sudo chmod -R 777 bootstrap/cache --> fix error : permistion denied
+
+
+-> containner la gi ?
++ một dạng runtime của các Docker image, dùng để làm môi trường chạy ứng dụng.
+	+ neu Image la mot class thi Container la mo thuc the  cua class do
+	+ container duoc tao boi Image
+	+ Container la su dong gop cua nhung moi truong de khoi chay
+	+ ben trong container cung co nhung thu vien, nhung goi phu thuoc de khoi chay ung dung
+-> image la gi?
+   +  một dạng tập hợp các tệp của ứng dụng, được tạo ra bởi Docker engine. Nội dung của các Docker image sẽ không bị thay đổi khi di chuyển. Docker image được dùng để chạy các Docker container.
+	+ dung de tao ra containner
+	+ la nhung khuon mau chi doc (read only 	templates)
+	+ image duoc tao ra boi docker command "build"
+	+ image co the co nhieu hinh anh
+	+ dc luu trong docker Register
+-> dockerFile ? build 1 docker file? 
+	là một tập tin dạng text chứa một tập các câu lệnh để tạo mới một Image trong Docker
+	b1: tao 1 file dockerfile (dung vim or vi)
+		-> FROM ubuntu:bionic
+		RUN apt-get update -y
+		RUN apt-get install -y vim git
+
+	b2: chay lenh: $ docker build -t thanh.tln/ubuntu .
+	b3: $ docker run -it thanh.tln/ubuntu /bin/bash 
+	
+-> dockerCompo ?
+	la cong cu de quan ly cac container va lien ket cac image do lai voi nhau. khi chay ung dung web worddess -> can he dieu hanh linux cu the la ubuntu, co so du lieu la mySQL, ngon ngu la PHP , cuoi cung la may chu APache --> chung ta co the dong goi cac thanh phan do lai voi nhau vao 1 image roi sau do dung no de chay thong qua 1 dong lenh
+
+-> lara doc?
+-> chay dc 1 file len moi truong web?
++ viet dc 1 docker file?
++ moi truong phat trien web ntn? can gi?
+
+--> lenh Docker :
+- docker images: hien thi danh sach images
+- docker -v: kiem tra version docker
+- docker ps (-a): hien thi container dang chay
+- docker rm iDContainer: xoa container
+- docker rmi idImages: xoa images
+- docker pull image:tag
+- docket run -it (--name NAME -h HOST) ID-image
+- docker attach ID-container: quay tro lai terminal cua container dang chay
+- docker start ID-container: khoi chay lai container da tat
+- docker stop ID-container
+- Ctrl P+Q
+
+
+**  
+- docker exec tenContainer lenh: thuc thi lenh khi o ngoai lenh terminal cua image
+- docker commit U1 ubuntu-thanh:version1 -> luu container thanh image
+- docker save --output tenFile.tar IDimage -> luu image thanh file 
+- docker load -i tenfile.tar -> phuc hoi image tu file;
+- docker tag 7a4403bfe32c(id image) ubuntu-thanh:version2(tenmoi/tag)	
+
+** kiem tra networking
+- docker network ls : kiem tra danh sach network
+- docker network inspect bridge(ten network muon tra cuu)
+- docker inspect B1(ten cua container muon kiem tra): kiem tra container dang ket noi den mang nao
+- docker network create --driver bridge myNetWork: tao ra cac mang bridge
+- docker network rm myNetWork : xoa network co ten la myNetWork
+- docker run -it --name B4 --network network1 debian: khoi tao 1 container co ten la B4 ket noi voi network la network1
+- docker network connect name-network name-container: ket noi network voi containner
+
+*** Cài đặt, tạo và chạy PHP, phiên bản có PHP-FPM bằng Docker
+- tao mot network brige:
+    $ docker network create --driver bridge www-net
+- docker run -d --name c-php -h php -v ~/Desktop/shareData/php:/home/dulieu --network www-net php:7.2fpm
+					 (thu muc may host)     (thu muc container)
+*** Cài đặt, tạo và chạy PHP, phiên bản có PHP-FPM bằng Docker
+- docker run --name c-httpd --network www-net -h httpd -p 9999:80 -p 443:443 -v /home/nhatthanh2012/Desktop/shareData:/home/dulieu -v /home/nhatthanh2012/Desktop/shareData/httpd.conf:/usr/local/apache2/conf/httpd.conf httpd
+
+*** LARADOCK
+
+
+- create project laravel: composer create-project --prefer-dist laravel/laravel blog
+- git clone https://github.com/Laradock/laradock.git
+- cp env-example .env -> sua mysql-port
+- docker-compose build  //docker-compose up --build
+- service docker restart || docker-compose stop -> docker-compose start
+- docker-compose up -d mysql nginx (5 done)
+- ifconfig | grep 192// ip addr show-> lay id:192.168...
+- docker-compose exec workspace bash
+
+docker inspect blenddock_mysql_1        --> gateway
+load lai file sau khi pull ve
+composer dump-autoload
+
+*** cau truc du lieu và giải thuật
+- array , linked list, stack, kill,
+
+phpstorm: hieuhpt/Hieuhpt!@#123
+
