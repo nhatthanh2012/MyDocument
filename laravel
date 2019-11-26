@@ -1,0 +1,189 @@
+1. Create/ edit
+Incontroller
+ public function updateUserManagement($data) {
+        return ManagementUser::updateUser($data->toArray());
+    }
+	
+public function store(InsertUser $request) {
+        $params = $request->all();
+
+        DB::beginTransaction();
+        try {
+            $user = ManagementUser::fetchById($params['loginId']);
+            if ($user) {
+                Session::flash("user_existed");
+                return redirect()->back()->withInput();
+            }
+
+            ManagementUser::store($params);
+            Session::flash('user_registration_success');
+            DB::commit();
+            return redirect()->route(ADMIN_USER_LIST);
+        } catch (\Exception $e) {
+            Session::flash("error_registration");
+            return redirect()->back()->withInput();
+        } finally {
+            DB::rollBack();
+        }
+    }
+
+In Model
+protected function store($data) {
+        return $this->create([
+            'AccountName' => $data['AccountName'],
+            'loginId' => $data['loginId'],
+            'Password' => Hash::make($data['Password']) ,
+            'RoleWaitingReview' => isset($data['RoleWaitingReview']) ? 1 : 0,
+            'RoleDoubleReviewSv' => isset($data['RoleDoubleReviewSv']) ? 1 : 0,
+            'RoleDoubleReviewCom' => isset($data['RoleDoubleReviewCom']) ? 1 : 0,
+            'RoleCompleteReview' => isset($data['RoleCompleteReview']) ? 1 : 0,
+            'RoleLisaDownload' => isset($data['RoleLisaDownload']) ? 1 : 0,
+            'RoleUserList' => isset($data['RoleUserList']) ? 1 : 0,
+            'RoleUserEdit' => isset($data['RoleUserEdit']) ? 1 : 0,
+            'RoleWhatsNew' => isset($data['RoleWhatsNew']) ? 1 : 0,
+            'RoleWhatsNewDetail' => isset($data['RoleWhatsNewDetail']) ? 1 : 0,
+            'DeleteFlg' => $data['DeleteFlg'],
+            'DelTime' => date('Y-m-d H:i:s'),
+            'InsTime' => date('Y-m-d H:i:s'),
+            'UpdTime' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    protected function updateUser($data) {
+        return $this->where('loginId', $data['loginIdOld'])->update([
+            'AccountName' => $data['AccountName'],
+            'loginId' => $data['loginId'],
+            'RoleWaitingReview' => $data['RoleWaitingReview'],
+            'RoleDoubleReviewSv' => $data['RoleDoubleReviewSv'],
+            'RoleDoubleReviewCom' => $data['RoleDoubleReviewCom'],
+            'RoleCompleteReview' => $data['RoleCompleteReview'],
+            'RoleLisaDownload' => $data['RoleLisaDownload'],
+            'RoleUserList' => $data['RoleUserList'],
+            'RoleUserEdit' => $data['RoleUserEdit'],
+            'RoleWhatsNew' => $data['RoleWhatsNew'],
+            'DeleteFlg' => $data['DeleteFlg'],
+        ]);
+    }
+	
+2. Search
+	protected function fetchByConditions($params){
+        $data = ManagementUser::where(function ($query) use ($params) {
+            if (isset($params['loginId'])) {
+                $query->where('loginId', 'like', '%'.$params['loginId'].'%');
+            }
+            if (isset($params['RoleUserEdit'])) {
+                $query->where('RoleUserEdit', $params['RoleUserEdit']);
+            }
+            if (isset($params['AccountName'])) {
+                $query->where('AccountName', 'like', '%'.$params['AccountName'].'%');
+            }
+        })->orderBy('AccountName', 'asc');
+
+        return $data;
+    }
+
+3. Pagination
+	<div class="pull-left">
+		@php
+			$page = (empty(request('page'))) ? 1 : request('page')-1;
+		@endphp
+		@if(count($getAuid) == 0)
+			<p>{{ $getAuid->total() }}件中 {{ 0 }}件を表示</p>
+		@elseif(empty(request('page')))
+			<p>{{ $getAuid->total() }}件中 {{ 1 }}～{{ count($getAuid) }}件を表示</p>
+		@else
+			<p>{{ $getAuid->total() }}件中 {{($page*10-9) + 10 }}～{{ ($page*10) + count($getAuid) }}件を表示</p>
+		@endif
+	</div>
+	<div class="box-tools pull-right">
+		{{ $getAuid->appends(request()->all())->render('pagination.user-new') }}
+	</div>
+	
+4. Change Password
+	public function changePasswordSubmit(ChangePasswordRequest $request) {
+        $params = $request->all();
+        $params['Password'] = Hash::make($params['Password']);
+        $user = ManagementUser::fetchById($params['id']);
+
+        if ($user && Hash::check($request->oldPassword, $user->Password)) {
+            ManagementUser::where('loginId', $params["id"])->update(["Password" => $params["Password"]]);
+            return redirect()->route(ADMIN_USER_LIST);
+        } else {
+            Session::flash("falsePassword");
+            return redirect()->route(CHANGE_PASSWORD, $params["id"]);
+        }
+    }
+	
+5. Login
+	public function loginAdmin(Request $request)
+    {
+        $loginInfo = request()->all();
+        $account = ManagementUser::fetchByOne($loginInfo);
+
+        if ($account) {
+            if (Hash::check($loginInfo['Password'], $account['Password'])) {
+                $request->session()->put('admin', $account);
+                $userRole = ManagementUser::getUserRole($account);
+
+                if ($userRole) {
+                    return redirect()->route($userRole[0]);
+                } else {
+                    return view('errors.error');
+                }
+            } else {
+                $request->session()->put('login', 'error');
+                return redirect()->route(LOGIN_ADMIN);
+            }
+        } else {
+            return view('errors.error');
+        }
+    }
+	
+6. Validate front-end
+<script>
+	var regexKana = /^([ァ-ヶ]|ー)+$/;
+	var regexHalfWidth = /[0-9a-zA-Z]/;
+	var regexNumber = /^\d+$/;
+
+	$(document).on('click', '.btn-search', function () {
+		var error = true;
+		var LastNameKana = $('.LastNameKana').val().trim();
+		var FirstNameKana = $('.FirstNameKana').val().trim();
+		var Auid = $('.auId').val().trim();
+
+		if (Auid && !regexNumber.test(Auid)) {
+			error = false;
+			$('#auIdNumber').css('display', 'block');
+			$('.auId').addClass('error');
+		} else {
+			$('#auIdNumber').css('display', 'none');
+			$('.auId').removeClass('error')
+		}
+		if (Auid && !regexHalfWidth.test(Auid)) {
+			error = false;
+			$('#auId').css('display', 'block');
+			$('.auId').addClass('error');
+		} else {
+			$('#auId').css('display', 'none');
+			$('.auId').removeClass('error')
+		}
+		if (LastNameKana && !regexKana.test(LastNameKana)) {
+			error = false;
+			$('#LastKana').css('display', 'block');
+			$('.LastNameKana').addClass('error');
+		} else {
+			$('#LastKana').css('display', 'none');
+			$('.LastNameKana').removeClass('error')
+		}
+		if (FirstNameKana && !regexKana.test(FirstNameKana)) {
+			error = false;
+			$('#FirstKana').css('display', 'block');
+			$('.FirstNameKana').addClass('error');
+		} else {
+			$('#FirstKana').css('display', 'none');
+			$('.FirstNameKana').removeClass('error')
+		}
+		if (error) $("#frmSearch").submit();
+	});
+</script>
+	
