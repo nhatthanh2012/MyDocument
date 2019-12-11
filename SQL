@@ -1,0 +1,116 @@
+1. 
+protected function fetchByMax() {
+	return $this->select(['FundCourseCode', DB::raw('max(YearMonthDay) as max')])->groupBy('FundCourseCode');
+}
+
+protected function getList() {
+	$maxRecord = $this->fetchByMax();
+
+	return $this->select([
+		'FundCourseMaster.FundCourseName',
+		'FundCourseMaster.ThumbnailImage',
+		'FundCourseMaster.MostPopularFlg',
+		'FundCourseMaster.SetupNisaFlg',
+		'FundCourseMaster.DetailViewUrl',
+		'BaseValueMaster.BaseValue',
+		'BaseValueMaster.DayBeforeRatio',
+	])
+		->join('FundCourseMaster', 'FundCourseMaster.FundCourseCode', '=', 'BaseValueMaster.FundCourseCode')
+		->joinSub($maxRecord, 'max_BaseValueMaster', function($join) {
+			$join->on([
+				'BaseValueMaster.FundCourseCode' => 'max_BaseValueMaster.FundCourseCode',
+				'BaseValueMaster.YearMonthDay' => 'max_BaseValueMaster.max',
+			]);
+		})
+		->where('FundCourseMaster.DeleteFlg', 0)
+		->orderBy('BaseValueMaster.FundCourseCode')
+		->get();
+}
+
+2. 
+ protected function getMaxLastLoginTime() {
+        return $this->select([
+            DB::raw('PlateAccountBranchNumber, PlateAccountCustomerNumber, max(LastLoginTime) as max')
+        ])->groupBy('PlateAccountBranchNumber', 'PlateAccountCustomerNumber');
+    }
+	
+ protected function getListAuIDList($params) {
+        $maxLastLoginTime = AuidManagement::getMaxLastLoginTime();
+        $conditions = $this->getCondtions($params);
+
+        return $this->select([
+            'AuidManagement.AliasAuId',
+            'ApplyProfile.PlateAccountBranchNumber',
+            'ApplyProfile.PlateAccountCustomerNumber',
+            'ApplyProfile.InsTime',
+            'ApplyProfile.UpdTime',
+            'ApplyProfile.SpecificOpening',
+            'ApplyProfile.JudgeResultYellowCustomer'
+        ])
+            ->join('AuidManagement', [
+                'AuidManagement.PlateAccountBranchNumber' => 'ApplyProfile.PlateAccountBranchNumber',
+                'AuidManagement.PlateAccountCustomerNumber' => 'ApplyProfile.PlateAccountCustomerNumber'
+            ])
+            ->joinSub($maxLastLoginTime, 'max_LastLoginTime',
+                function ($join) {
+                    $join->on([
+                        'AuidManagement.PlateAccountBranchNumber' => 'max_LastLoginTime.PlateAccountBranchNumber',
+                        'AuidManagement.PlateAccountCustomerNumber' => 'max_LastLoginTime.PlateAccountCustomerNumber',
+                        'AuidManagement.LastLoginTime' => 'max_LastLoginTime.max'
+                    ]);
+                })
+            ->where(function ($query) use ($params) {
+                if (isset($params['SpecificOpening1'])) {
+                    $query->orWhere('SpecificOpening', '=', 2);
+                }
+                if (isset($params['SpecificOpening2'])) {
+                    $query->orWhere('SpecificOpening', '=', 1);
+                }
+                if (isset($params['SpecificOpening3'])) {
+                    $query->orWhere(function ($query){
+                        $query->where([
+                            'SpecificOpening' => 8,
+                            'JudgeResultYellowCustomer' => 2
+                        ]);
+                    });
+                }
+                if (isset($params['SpecificOpening4'])) {
+                    $query->orWhere(function ($query){
+                        $query->where([
+                            'SpecificOpening' => 8,
+                            'JudgeResultYellowCustomer' => 9
+                        ]);
+                    });
+                }
+                if (isset($params['SpecificOpening5'])) {
+                    $query->orWhere('SpecificOpening', '=', 9);
+                }
+            })
+            ->where($conditions);
+    }
+
+    protected function getCondtions($params) {
+        $condition = [];
+        if (isset($params['check_screen']) && $params['check_screen'] == ADSK01_EXAMINATION_LIST2)
+            $condition[] = ['JudgeResultYellowCustomer', '<>', 9];
+        if (isset($params['check_screen']) && $params['check_screen'] == ADSK01_EXAMINATION_LIST4)
+            $condition[] = ['JudgeResultYellowCustomer', '=', 9];
+        if (isset($params['SpecificOpening']) && $params['SpecificOpening'] != 0)
+            $condition[] = ['SpecificOpening', '=', $params['SpecificOpening']];
+        if (isset($params['SpecificOpening']) && $params['SpecificOpening'] == 0)
+            $condition[] = ['SpecificOpening', '<>', $params['SpecificOpening']];
+        if (isset($params['JudgeResultYellowCustomer']))
+            $condition[] = ['JudgeResultYellowCustomer', '<>', $params['JudgeResultYellowCustomer']];
+        if (isset($params['AuId']))
+            $condition[] = ['AuidManagement.AliasAuId', 'like', '%' . $params['AuId'] . '%'];
+        if (isset($params['LastNameKana']))
+            $condition[] = ['LastNameKana', 'like', '%' . $params['LastNameKana'] . '%'];
+        if (isset($params['FirstNameKana']))
+            $condition[] = ['FirstNameKana', 'like', '%' . $params['FirstNameKana'] . '%'];
+        if (isset($params['datefrom']))
+            $condition[] = ['ApplyProfile.InsTime', '>=', date("Y-m-d H:i:s", strtotime($params['datefrom']))];
+        if (isset($params['InsTime']))
+            $condition[] = ['ApplyProfile.InsTime', '<=', date("Y-m-d H:i:s", strtotime($params['dateto']))];
+
+        return $condition;
+    }

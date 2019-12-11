@@ -1,1 +1,7 @@
 データーはありません: khong co du lieu
+データフィールドに数字のみを入力してください: chỉ được nhập số
+URL型で入力してください。 : nhập đúng định dạng URL
+
+ var regexKana = /^([ァ-ヶ]|ー)+$/;
+  var regexHalfWidth = /[0-9a-zA-Z]/;
+  var regexNumber =/^\d+$/;
