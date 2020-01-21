@@ -114,3 +114,58 @@ protected function getList() {
 
         return $condition;
     }
+	
+3. 
+	protected function getListData($patKey, $params) {
+        return $this->from('PlateAllItemTransaction As pat')
+            ->select([
+                'fccm.ReinvestmentReceiptFlg',
+				
+                DB::raw('CASE WHEN fccm.ReinvestmentReceiptFlg = 1 THEN fcm.FundCourseName
+                WHEN fccm.ReinvestmentReceiptFlg = 2 THEN fcm.FundBrandName2
+                ELSE null END as FundCourseName'),
+				
+                'pat.ExecutionDate',
+                'pat.DeliveryDate',
+                'pat.SpotSpecifiedAccount',
+                'pat.TradingCategory',
+                'pat.OrderChannelOfFeeTable',
+                'pat.SalesValue',
+                DB::raw('SUBSTRING(pat.DeliveryDate, 1, 4) as Year')
+            ])
+            ->join('FundCourseCodeMaster As fccm', 'pat.FundCourseCode', '=', 'fccm.PlateFundCourseCode')
+            ->join('FundCourseMaster As fcm', 'fccm.FundCourseCode', '=', 'fcm.FundCourseCode')
+            ->where(function ($query) use ($patKey, $params) {
+                $this->checkConditions($query, $params, $patKey);
+            })
+            ->orderBy('pat.DeliveryDate', 'DESC')
+            ->orderBy('pat.CpuExecutionNo')->paginate(10)
+            ->groupBy('Year');
+    }
+
+4.  protected function getList() {
+        return $this->select([
+            'FundCourseMaster.FundCourseName',
+            'FundCourseMaster.ThumbnailImage',
+            'FundCourseMaster.MostPopularFlg',
+            'FundCourseMaster.SetupNisaFlg',
+            'FundCourseMaster.DetailViewUrl',
+            'BaseValueMaster.BaseValue',
+            'BaseValueMaster.DayBeforeRatio',
+        ])
+            ->join('FundCourseMaster', 'FundCourseMaster.FundCourseCode', '=', 'BaseValueMaster.FundCourseCode')
+            ->join(DB::raw('(
+                    SELECT  FundCourseCode, max(YearMonthDay) as max
+                    FROM BaseValueMaster
+                    GROUP BY FundCourseCode
+                ) max_YearMonthDay'),
+                function($join) {
+                    $join->on([
+                        'BaseValueMaster.FundCourseCode' => 'max_YearMonthDay.FundCourseCode',
+                        'BaseValueMaster.YearMonthDay' => 'max_YearMonthDay.max',
+                    ]);
+                })
+            ->where('FundCourseMaster.DeleteFlg', 0)
+            ->orderBy('BaseValueMaster.FundCourseCode')
+            ->get();
+    }

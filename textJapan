@@ -1,7 +1,18 @@
 データーはありません: khong co du lieu
 データフィールドに数字のみを入力してください: chỉ được nhập số
 URL型で入力してください。 : nhập đúng định dạng URL
-
- var regexKana = /^([ァ-ヶ]|ー)+$/;
-  var regexHalfWidth = /[0-9a-zA-Z]/;
-  var regexNumber =/^\d+$/;
+約定履歴は最後のです。 : lich sử giao dịch là cuối cùng
+検索結果と一致するものはありません。: không có kết quả tìm kiếm phù hợp
+マイナンバーは12桁で入力してください。 : Vui lòng nhập Số của tôi với 12 chữ số.
+マイナンバーが一致しません。: Số của tôi không khớp.
+(ログインID）が256文字以上過ぎました。 (...) không nhập quá 256 ký tự
+(メモ)を入力してください。 : vui long nhap (..)
+必須項目です。 : lĩnh vực bắt buộc
+***は、255文字まで入力可能です。 : loi vuot qua 256 ky tu (*** ten field bat buoc)
+  regexKana = /^([ァ-ヶ]|ー)+$/;
+  regexHalfWidth = /[0-9a-zA-Z]/;
+  regexNumber =/^\d+$/;
+  mail_pattern = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+  
+  date('Y年n月j日', strtotime($getInfo['Birthday'])) : không có số 0 ở ngày tháng
+  date('Ymd', strtotime("-".$params['DeliveryDate']."months") : trừ đi ... tháng trước
